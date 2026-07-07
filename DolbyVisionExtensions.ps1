@@ -355,6 +355,33 @@ function Get-RgAdguardFiles {
     }
 }
 
+function Get-OsArchitectureToken {
+    $arch = $env:PROCESSOR_ARCHITEW6432
+    if (-not $arch) {
+        $arch = $env:PROCESSOR_ARCHITECTURE
+    }
+
+    if ($arch -eq "ARM64") { return "arm64" }
+    if ($arch -eq "AMD64") { return "x64" }
+    return "x86"
+}
+
+function Get-PackageFileName {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    $match = [regex]::Match(
+        $Name,
+        '[^<>:"/\\|?*]+?\.(appx|msix)(bundle)?',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+
+    if ($match.Success) {
+        return $match.Value
+    }
+
+    return ($Name -replace '[<>:"/\\|?*]', '_')
+}
+
 function Get-PackageVersionFromName {
     param([Parameter(Mandatory = $true)][string]$Name)
 
@@ -370,17 +397,65 @@ function Get-PackageVersionFromName {
     }
 }
 
+function Get-ArchitectureRank {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    if ($Name -match "bundle") { return 0 }
+    if ($Name -match "_$script:Architecture`_") { return 0 }
+    if ($Name -match "_neutral_") { return 1 }
+    return 9
+}
+
+function Test-PackageFileName {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    return ($Name -match '\.(appx|msix)(bundle)?(\s|$)')
+}
+
 function Select-NewestPackage {
     param([Parameter(Mandatory = $true)]$Files)
 
     $Files | Where-Object {
         $_.Name -match [regex]::Escape($PackageName) -and
-        $_.Name -match '\.(appx|msix)(bundle)?(\s|$)'
+        (Test-PackageFileName $_.Name)
     } | Sort-Object -Property @(
         @{ Expression = { Get-PackageVersionFromName $_.Name }; Descending = $true },
         @{ Expression = { $_.Name -notmatch 'bundle' }; Ascending = $true },
         @{ Expression = { $_.Name }; Descending = $true }
     ) | Select-Object -First 1
+}
+
+function Select-DependencyFiles {
+    param([Parameter(Mandatory = $true)]$Files)
+
+    $dependencyPattern = (
+        'Microsoft\.VCLibs|' +
+        'Microsoft\.NET\.Native|' +
+        'Microsoft\.UI\.Xaml|' +
+        'Microsoft\.Services\.Store'
+    )
+
+    $Files | Where-Object {
+        (Test-PackageFileName $_.Name) -and
+        $_.Name -match $dependencyPattern -and
+        (Get-ArchitectureRank $_.Name) -lt 9
+    } | Sort-Object Name -Unique
+}
+
+function Save-StoreFile {
+    param([Parameter(Mandatory = $true)]$File)
+
+    $fileName = Get-PackageFileName $File.Name
+    $destFile = Join-Path $WorkDir $fileName
+    $previousProgressPreference = $ProgressPreference
+    $ProgressPreference = "SilentlyContinue"
+    try {
+        Invoke-WebRequest -Uri $File.Url -OutFile $destFile -UserAgent $UA -UseBasicParsing
+    } finally {
+        $ProgressPreference = $previousProgressPreference
+    }
+
+    return Get-Item -LiteralPath $destFile
 }
 
 Write-Box "Dolby Vision Extensions" @(
@@ -390,6 +465,8 @@ Write-Box "Dolby Vision Extensions" @(
 
 Ensure-Administrator
 New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
+
+$script:Architecture = Get-OsArchitectureToken
 
 Start-Step "Establishing rg-adguard session"
 try {
@@ -412,6 +489,7 @@ $commonHeaders = @{
 Start-Step "Resolving Dolby Vision package"
 
 $target = $null
+$targetDependencies = @()
 foreach ($ring in $Rings) {
     Write-Detail "trying ring: $ring"
     try {
@@ -423,6 +501,7 @@ foreach ($ring in $Rings) {
 
     $target = Select-NewestPackage -Files $files
     if ($target) {
+        $targetDependencies = @(Select-DependencyFiles -Files $files)
         Complete-Step "Found $($target.Name)"
         break
     }
@@ -448,22 +527,29 @@ if ($installedBefore -and ([version]$installedBefore.Version -ge $targetVersion)
     exit 0
 }
 
-$destFile = Join-Path $WorkDir $target.Name
 Start-Step "Downloading package"
-Write-Detail $target.Name
-$previousProgressPreference = $ProgressPreference
-$ProgressPreference = "SilentlyContinue"
-try {
-    Invoke-WebRequest -Uri $target.Url -OutFile $destFile -UserAgent $UA -UseBasicParsing
-} finally {
-    $ProgressPreference = $previousProgressPreference
+Write-Detail (Get-PackageFileName $target.Name)
+$dependencyPaths = @()
+foreach ($dependency in $targetDependencies) {
+    $dependencyFile = Save-StoreFile -File $dependency
+    $dependencyPaths += $dependencyFile.FullName
+    Write-Detail "dependency: $($dependencyFile.Name)"
 }
-$downloadedFile = Get-Item -LiteralPath $destFile
-Complete-Step "Saved to $destFile ($(Format-Bytes $downloadedFile.Length))"
+
+$packageFile = Save-StoreFile -File $target
+$destFile = $packageFile.FullName
+Complete-Step "Saved to $destFile ($(Format-Bytes $packageFile.Length))"
 
 Start-Step "Installing package"
 try {
-    Add-AppxPackage -Path $destFile -ForceApplicationShutdown
+    if ($dependencyPaths.Count -gt 0) {
+        Add-AppxPackage `
+            -Path $destFile `
+            -DependencyPath $dependencyPaths `
+            -ForceApplicationShutdown
+    } else {
+        Add-AppxPackage -Path $destFile -ForceApplicationShutdown
+    }
     Complete-Step "Add-AppxPackage completed"
 } catch {
     Write-PrettyWarning "Add-AppxPackage failed: $($_.Exception.Message)"

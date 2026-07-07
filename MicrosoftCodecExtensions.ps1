@@ -480,8 +480,15 @@ function Select-MainPackageFile {
 
     $sort = @(
         @{ Expression = { Get-ArchitectureRank $_.Name }; Ascending = $true },
+        @{
+            Expression = {
+                $version = Get-PackageVersionFromName $_.Name
+                if ($version) { $version } else { [version]"0.0.0.0" }
+            }
+            Descending = $true
+        },
         @{ Expression = { $_.Name -notmatch 'bundle' }; Ascending = $true },
-        @{ Expression = { $_.Name }; Ascending = $true }
+        @{ Expression = { $_.Name }; Descending = $true }
     )
     return $candidates | Sort-Object -Property $sort | Select-Object -First 1
 }
