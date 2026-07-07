@@ -700,6 +700,9 @@ $summary = @(
     "Installed or updated: $installedCount",
     "Already present: $skippedCount",
     "Failed: $($failedPackages.Count)",
+    "Note: paid HEVC Video Extensions is not included.",
+    "Restore 9NMZLZ57R3T7 from Microsoft Store if your account owns it.",
+    "URL: https://apps.microsoft.com/detail/9nmzlz57r3t7",
     "Elapsed: $(Format-Elapsed ((Get-Date) - $script:StartedAt))"
 )
 

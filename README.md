@@ -74,6 +74,10 @@ This installs the verified first-party Microsoft Store codec-extension set:
 - Raw Image Extension: `9NCTDW2W1BH8`
 - JPEG XL Image Extension: `9MZPRTH5C0TB`
 
+After this script finishes, it reminds you that the paid `HEVC Video Extensions`
+package (`9NMZLZ57R3T7`) is separate. Restore it from Microsoft Store if your
+account owns it: <https://apps.microsoft.com/detail/9nmzlz57r3t7>.
+
 ## Scope
 
 The Microsoft script is intentionally separate from the Dolby scripts.
