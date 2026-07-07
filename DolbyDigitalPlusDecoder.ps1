@@ -134,13 +134,10 @@ function Write-Box {
 
     $width = Get-UiWidth
     $inner = $width - 4
-    $titleText = " $Title "
-    $topFill = $width - 3 - $titleText.Length
-    if ($topFill -lt 0) { $topFill = 0 }
 
     Write-Ui ""
-    Write-Ui ($script:Glyph.TL + $script:Glyph.H + $titleText + ($script:Glyph.H * $topFill) + $script:Glyph.TR) $Color
-    foreach ($line in $Lines) {
+    Write-Ui ($script:Glyph.TL + ($script:Glyph.H * ($width - 2)) + $script:Glyph.TR) $Color
+    foreach ($line in (@($Title) + $Lines)) {
         foreach ($wrappedLine in (Split-Text $line $inner)) {
             Write-Ui ($script:Glyph.V + " " + $wrappedLine.PadRight($inner) + " " + $script:Glyph.V) $Color
         }
