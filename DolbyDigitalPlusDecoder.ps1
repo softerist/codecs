@@ -17,14 +17,31 @@ $ScriptUrl  = "https://raw.githubusercontent.com/softerist/codecs/main/DolbyDigi
 $ProductUrl = "https://www.microsoft.com/store/productId/9nvjqjbdkn97"
 $Rings      = @("Retail", "RP", "WIF", "WIS")
 $WorkDir    = Join-Path $env:TEMP "DolbyDDPInstall"
-$UA         = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+$UA         = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+    "AppleWebKit/537.36 (KHTML, like Gecko) " +
+    "Chrome/126.0.0.0 Safari/537.36"
+)
 if ($env:DOLBY_DDP_SCRIPT_URL) {
     $ScriptUrl = $env:DOLBY_DDP_SCRIPT_URL
 }
 
+try {
+    $utf8NoBom = New-Object System.Text.UTF8Encoding -ArgumentList $false
+    [Console]::OutputEncoding = $utf8NoBom
+    $OutputEncoding = $utf8NoBom
+    $script:Utf8OutputEnabled = $true
+} catch {
+    $script:Utf8OutputEnabled = $false
+}
+
 $script:StartedAt = Get-Date
 $script:StepStartedAt = $null
-$script:UseAsciiGlyphs = ($env:DOLBY_DDP_ASCII -eq "1") -or ($env:TERM -eq "dumb")
+$script:UseAsciiGlyphs = (
+    ($env:DOLBY_DDP_ASCII -eq "1") -or
+    ($env:TERM -eq "dumb") -or
+    (-not $script:Utf8OutputEnabled)
+)
 $script:NoColor = ($env:NO_COLOR -eq "1") -or ($env:TERM -eq "dumb")
 
 $script:Glyph = @{}
@@ -119,6 +136,7 @@ function Format-Elapsed {
 function Format-Bytes {
     param([long]$Bytes)
 
+    if ($Bytes -lt 0) { return "0 B" }
     if ($Bytes -ge 1GB) { return ("{0:n2} GB" -f ($Bytes / 1GB)) }
     if ($Bytes -ge 1MB) { return ("{0:n1} MB" -f ($Bytes / 1MB)) }
     if ($Bytes -ge 1KB) { return ("{0:n0} KB" -f ($Bytes / 1KB)) }
@@ -139,7 +157,14 @@ function Write-Box {
     Write-Ui ($script:Glyph.TL + ($script:Glyph.H * ($width - 2)) + $script:Glyph.TR) $Color
     foreach ($line in (@($Title) + $Lines)) {
         foreach ($wrappedLine in (Split-Text $line $inner)) {
-            Write-Ui ($script:Glyph.V + " " + $wrappedLine.PadRight($inner) + " " + $script:Glyph.V) $Color
+            $boxLine = (
+                $script:Glyph.V +
+                " " +
+                $wrappedLine.PadRight($inner) +
+                " " +
+                $script:Glyph.V
+            )
+            Write-Ui $boxLine $Color
         }
     }
     Write-Ui ($script:Glyph.BL + ($script:Glyph.H * ($width - 2)) + $script:Glyph.BR) $Color
@@ -200,6 +225,18 @@ function Test-IsAdministrator {
     }
 }
 
+function Test-CanPrompt {
+    try {
+        if ([Console]::IsInputRedirected) {
+            return $false
+        }
+    } catch {
+        return $false
+    }
+
+    return ($Host -and $Host.UI)
+}
+
 function Get-PowerShellHostPath {
     if ($PSHOME) {
         $candidate = Join-Path $PSHOME "powershell.exe"
@@ -230,18 +267,40 @@ function Quote-ProcessArgument {
     return '"' + ($Text -replace '"', '\"') + '"'
 }
 
+function Add-CacheBustToUrl {
+    param([Parameter(Mandatory = $true)][string]$Url)
+
+    $separator = "?"
+    if ($Url -match "\?") {
+        $separator = "&"
+    }
+
+    return $Url + $separator + "cb=" + ([guid]::NewGuid().ToString("N"))
+}
+
 function Start-ElevatedRelaunch {
     $hostPath = Get-PowerShellHostPath
     if (-not $hostPath) {
-        Stop-WithMessage "Could not find powershell.exe or pwsh.exe for elevation." "Open PowerShell as Administrator and run this installer again."
+        Stop-WithMessage `
+            "Could not find powershell.exe or pwsh.exe for elevation." `
+            "Open PowerShell as Administrator and run this installer again."
     }
 
     if ($PSCommandPath -and (Test-Path -LiteralPath $PSCommandPath)) {
-        $arguments = "-NoExit -NoProfile -ExecutionPolicy Bypass -File " + (Quote-ProcessArgument $PSCommandPath)
+        $arguments = (
+            "-NoExit -NoProfile -ExecutionPolicy Bypass -File " +
+            (Quote-ProcessArgument $PSCommandPath)
+        )
     } else {
-        $quotedUrl = Quote-PowerShellString $ScriptUrl
-        $command = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod $quotedUrl | Invoke-Expression"
-        $arguments = "-NoExit -NoProfile -ExecutionPolicy Bypass -Command " + (Quote-ProcessArgument $command)
+        $quotedUrl = Quote-PowerShellString (Add-CacheBustToUrl $ScriptUrl)
+        $command = @(
+            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12"
+            "Invoke-RestMethod $quotedUrl | Invoke-Expression"
+        ) -join "; "
+        $arguments = (
+            "-NoExit -NoProfile -ExecutionPolicy Bypass -Command " +
+            (Quote-ProcessArgument $command)
+        )
     }
 
     try {
@@ -258,16 +317,26 @@ function Ensure-Administrator {
 
     Write-PrettyWarning "Administrator rights are required to install an Appx package."
     Write-Detail "A Windows UAC prompt will open a new elevated PowerShell window." Yellow
+    Write-Detail "The elevated window stays open so you can review the result." Yellow
+    Write-Detail "elevated source: $ScriptUrl" DarkGray
+
+    if (-not (Test-CanPrompt)) {
+        Stop-WithMessage "Cannot prompt for elevation in this host." `
+            "Run this installer from an interactive PowerShell window."
+    }
+
     $answer = Read-Host "Allow elevation now? [allow/yes/no]"
     if ($null -eq $answer) { $answer = "" }
     $normalized = ([string]$answer).Trim().ToLowerInvariant()
 
-    if (($normalized -eq "a") -or ($normalized -eq "allow") -or ($normalized -eq "y") -or ($normalized -eq "yes")) {
+    if (@("a", "allow", "y", "yes") -contains $normalized) {
         Start-ElevatedRelaunch
         exit 0
     }
 
-    Stop-WithMessage "Elevation declined." "Open PowerShell as Administrator and run this installer again."
+    Stop-WithMessage `
+        "Elevation declined." `
+        "Open PowerShell as Administrator and run this installer again."
 }
 
 Write-Box "Dolby Digital Plus Decoder" @(
@@ -284,7 +353,9 @@ try {
         -SessionVariable Session -UseBasicParsing | Out-Null
     Complete-Step "Connected to store.rg-adguard.net"
 } catch {
-    Stop-WithMessage "Could not reach the rg-adguard homepage." "Likely a domain-level Cloudflare challenge: $($_.Exception.Message)"
+    Stop-WithMessage `
+        "Could not reach the rg-adguard homepage." `
+        "Likely a domain-level Cloudflare challenge: $($_.Exception.Message)"
 }
 
 $commonHeaders = @{
@@ -295,11 +366,15 @@ $commonHeaders = @{
 }
 
 function Get-RgAdguardFiles {
-    param([string]$Ring)
+    param(
+        [string]$Ring,
+        $WebSession
+    )
+
     $body = @{ type = "url"; url = $ProductUrl; ring = $Ring; lang = "en-US" }
     $resp = Invoke-WebRequest -Uri "https://store.rg-adguard.net/api/GetFiles" `
         -Method Post -Body $body -ContentType "application/x-www-form-urlencoded" `
-        -Headers $commonHeaders -UserAgent $UA -WebSession $Session -UseBasicParsing
+        -Headers $commonHeaders -UserAgent $UA -WebSession $WebSession -UseBasicParsing
     [regex]::Matches($resp.Content, '<a[^>]+href="([^"]+)"[^>]*>([^<]+)</a>') | ForEach-Object {
         [PSCustomObject]@{
             Url  = [System.Net.WebUtility]::HtmlDecode($_.Groups[1].Value)
@@ -314,23 +389,29 @@ $target = $null
 foreach ($ring in $Rings) {
     Write-Detail "trying ring: $ring"
     try {
-        $files = Get-RgAdguardFiles -Ring $ring
+        $files = Get-RgAdguardFiles -Ring $ring -WebSession $Session
     } catch {
         Write-PrettyWarning "ring '$ring' request failed: $($_.Exception.Message)"
         continue
     }
     $candidates = $files | Where-Object {
-        $_.Name -match 'Dolby.*Decoder.*OEM' -and $_.Name -match '\.(appx|msix)(bundle)?$'
+        $_.Name -match 'Dolby.*Decoder.*OEM' -and $_.Name -match '\.(appx|msix)(bundle)?(\s|$)'
     }
     if ($candidates) {
-        $target = $candidates | Sort-Object { $_.Name -match 'bundle' }, Name | Select-Object -First 1
+        $packageSort = @(
+            @{ Expression = { $_.Name -notmatch 'bundle' }; Ascending = $true },
+            @{ Expression = { $_.Name }; Ascending = $true }
+        )
+        $target = $candidates | Sort-Object -Property $packageSort | Select-Object -First 1
         Complete-Step "Found $($target.Name)"
         break
     }
 }
 
 if (-not $target) {
-    Stop-WithMessage "No matching package came back across rings: $($Rings -join ', ')." "The API may require a browser challenge; use the fallback script with a manually copied package URL."
+    Stop-WithMessage `
+        "No matching package came back across rings: $($Rings -join ', ')." `
+        "The API may require a browser challenge; use a manually copied package URL."
 }
 
 $destFile = Join-Path $WorkDir $target.Name
@@ -352,13 +433,24 @@ try {
     Complete-Step "Add-AppxPackage completed"
 } catch {
     Write-PrettyWarning "Add-AppxPackage failed: $($_.Exception.Message)"
-    Write-PrettyWarning "This often means a missing framework dependency. Try double-clicking: $destFile"
+    Write-PrettyWarning (
+        "This often means a missing framework dependency. " +
+        "Try double-clicking: $destFile"
+    )
     throw
 }
 
 Start-Step "Verifying install"
-Start-Sleep -Seconds 2
-$installed = Get-AppxPackage -Name "*DolbyDigitalPlusDecoderOEM*"
+$installed = $null
+for ($attempt = 1; $attempt -le 5 -and -not $installed; $attempt++) {
+    if ($attempt -gt 1) {
+        Start-Sleep -Seconds 1
+    }
+
+    $installed = Get-AppxPackage -Name "*DolbyDigitalPlusDecoderOEM*" |
+        Select-Object -First 1
+}
+
 if ($installed) {
     Complete-Step "Confirmed $($installed.Name) v$($installed.Version)"
     Write-Box "Done" @(
@@ -367,5 +459,6 @@ if ($installed) {
         "Elapsed: $(Format-Elapsed ((Get-Date) - $script:StartedAt))"
     ) Green
 } else {
-    Write-PrettyWarning "Add-AppxPackage reported success, but Get-AppxPackage does not show it. Manual check recommended."
+    Stop-WithMessage "Add-AppxPackage reported success, but verification failed." `
+        "Get-AppxPackage does not show the Dolby DDP OEM package."
 }
