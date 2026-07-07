@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Downloads and installs the Dolby Digital Plus Decoder (OEM) package via the
+    Downloads and installs the Dolby AC-4 Decoder (OEM) package via the
     store.rg-adguard.net API, then verifies it registered.
 
 .NOTES
-    Store product: DolbyLaboratories.DolbyDigitalPlusDecoderOEM (ID: 9nvjqjbdkn97)
+    Store product: DolbyLaboratories.DolbyAC4DecoderOEM (ID: 9P7646QPH1Q0)
     v2: establishes a session against the homepage first and reuses its cookies
     on the API POST, since bare POSTs were getting 403'd by Cloudflare in testing.
     If the homepage GET itself fails, that's a full domain-level block (likely a
@@ -13,18 +13,18 @@
 #>
 
 $ErrorActionPreference = "Stop"
-$ScriptUrl  = "https://raw.githubusercontent.com/softerist/codecs/main/DolbyDigitalPlusDecoder.ps1"
-$ProductUrl = "https://www.microsoft.com/store/productId/9nvjqjbdkn97"
-$PackageName = "DolbyLaboratories.DolbyDigitalPlusDecoderOEM"
+$ScriptUrl  = "https://raw.githubusercontent.com/softerist/codecs/main/DolbyAC4Decoder.ps1"
+$ProductUrl = "https://www.microsoft.com/store/productId/9P7646QPH1Q0"
+$PackageName = "DolbyLaboratories.DolbyAC4DecoderOEM"
 $Rings      = @("Retail", "RP", "WIF", "WIS")
-$WorkDir    = Join-Path $env:TEMP "DolbyDDPInstall"
+$WorkDir    = Join-Path $env:TEMP "DolbyAC4Install"
 $UA         = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
     "AppleWebKit/537.36 (KHTML, like Gecko) " +
     "Chrome/126.0.0.0 Safari/537.36"
 )
-if ($env:DOLBY_DDP_SCRIPT_URL) {
-    $ScriptUrl = $env:DOLBY_DDP_SCRIPT_URL
+if ($env:DOLBY_AC4_SCRIPT_URL) {
+    $ScriptUrl = $env:DOLBY_AC4_SCRIPT_URL
 }
 
 try {
@@ -39,7 +39,7 @@ try {
 $script:StartedAt = Get-Date
 $script:StepStartedAt = $null
 $script:UseAsciiGlyphs = (
-    ($env:DOLBY_DDP_ASCII -eq "1") -or
+    ($env:DOLBY_AC4_ASCII -eq "1") -or
     ($env:TERM -eq "dumb") -or
     (-not $script:Utf8OutputEnabled)
 )
@@ -340,7 +340,7 @@ function Ensure-Administrator {
         "Open PowerShell as Administrator and run this installer again."
 }
 
-Write-Box "Dolby Digital Plus Decoder" @(
+Write-Box "Dolby AC-4 Decoder" @(
     "OEM codec installer",
     "Source: rg-adguard / Microsoft Store package"
 )
@@ -384,7 +384,7 @@ function Get-RgAdguardFiles {
     }
 }
 
-Start-Step "Resolving Dolby DDP OEM package"
+Start-Step "Resolving Dolby AC-4 OEM package"
 
 $target = $null
 foreach ($ring in $Rings) {
@@ -462,5 +462,5 @@ if ($installed) {
     ) Green
 } else {
     Stop-WithMessage "Add-AppxPackage reported success, but verification failed." `
-        "Get-AppxPackage does not show the Dolby DDP OEM package."
+        "Get-AppxPackage does not show the Dolby AC-4 OEM package."
 }
