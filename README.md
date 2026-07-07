@@ -41,6 +41,20 @@ This installs only:
 - `DolbyLaboratories.DolbyAC4DecoderOEM`
 - Store product ID: `9P7646QPH1Q0`
 
+### Dolby Vision Extensions
+
+```powershell
+irm https://raw.githubusercontent.com/softerist/codecs/main/DolbyVisionExtensions.ps1 | iex
+```
+
+This installs only:
+
+- `DolbyLaboratories.DolbyVisionAccess`
+- Store product ID: `9PLTG1LWPHLF`
+
+Dolby Vision support still depends on compatible display hardware, GPU drivers,
+HDR settings, and playback app support.
+
 ### Microsoft Codec Extensions
 
 ```powershell
@@ -111,15 +125,18 @@ sign out and back in, or restart Windows.
 - `NO_COLOR=1`: disable colored output.
 - `DOLBY_DDP_ASCII=1`: force ASCII output in the Dolby script.
 - `DOLBY_AC4_ASCII=1`: force ASCII output in the Dolby AC-4 script.
+- `DOLBY_VISION_ASCII=1`: force ASCII output in the Dolby Vision script.
 - `MICROSOFT_CODECS_ASCII=1`: force ASCII output in the Microsoft script.
 - `DOLBY_DDP_SCRIPT_URL`: override the Dolby elevated relaunch URL.
 - `DOLBY_AC4_SCRIPT_URL`: override the Dolby AC-4 elevated relaunch URL.
+- `DOLBY_VISION_SCRIPT_URL`: override the Dolby Vision elevated relaunch URL.
 - `MICROSOFT_CODECS_SCRIPT_URL`: override the Microsoft elevated relaunch URL.
 
 ## References
 
 - [Microsoft Store: Dolby Digital Plus Decoder OEM][dolby-ddp]
 - [Microsoft Store: Dolby AC-4 Decoder OEM][dolby-ac4]
+- [Microsoft Store: Dolby Vision Extensions][dolby-vision]
 - [Microsoft Support: Windows Media Player errors][wmp-errors]
 - [Microsoft Support: Media Feature Pack optional apps][media-feature-pack]
 - [Microsoft Store: JPEG XL Image Extension][jpeg-xl]
@@ -136,5 +153,6 @@ sign out and back in, or restart Windows.
 [media-feature-pack]: https://support.microsoft.com/en-us/windows/experience/platform-variants/media-feature-pack-for-windows-10-11-n-february-2023
 [dolby-ddp]: https://apps.microsoft.com/detail/9nvjqjbdkn97
 [dolby-ac4]: https://apps.microsoft.com/detail/9P7646QPH1Q0
+[dolby-vision]: https://apps.microsoft.com/detail/9PLTG1LWPHLF
 [jpeg-xl]: https://apps.microsoft.com/detail/9mzprth5c0tb
 [paid-hevc]: https://apps.microsoft.com/detail/9nmzlz57r3t7
