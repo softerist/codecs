@@ -43,6 +43,9 @@ Allow elevation now? [allow/yes/no]
 
 Accepted answers are `allow`, `yes`, `a`, or `y`.
 
+The elevated PowerShell window stays open so you can review the result. Close it
+when you are done.
+
 ## What The Script Does
 
 1. Opens a session with `store.rg-adguard.net`.
