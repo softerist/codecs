@@ -44,10 +44,10 @@ if ($script:UseAsciiGlyphs) {
     }
 } else {
     $script:Glyph = @{
-        TL = [string][char]0x256D
-        TR = [string][char]0x256E
-        BL = [string][char]0x2570
-        BR = [string][char]0x256F
+        TL = [string][char]0x250C
+        TR = [string][char]0x2510
+        BL = [string][char]0x2514
+        BR = [string][char]0x2518
         H  = [string][char]0x2500
         V  = [string][char]0x2502
         Step = [string][char]0x25CF
