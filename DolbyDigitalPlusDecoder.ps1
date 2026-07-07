@@ -433,6 +433,19 @@ if (-not $target) {
 }
 
 $targetVersion = Get-PackageVersionFromName $target.Name
+$installedBefore = Get-AppxPackage -Name $PackageName -ErrorAction SilentlyContinue |
+    Sort-Object Version -Descending |
+    Select-Object -First 1
+
+if ($installedBefore -and ([version]$installedBefore.Version -ge $targetVersion)) {
+    Write-Box "Done" @(
+        "Already installed: $($installedBefore.Name) v$($installedBefore.Version)",
+        "Latest available package: v$targetVersion",
+        "Elapsed: $(Format-Elapsed ((Get-Date) - $script:StartedAt))"
+    ) Green
+    exit 0
+}
+
 $destFile = Join-Path $WorkDir $target.Name
 Start-Step "Downloading package"
 Write-Detail $target.Name
