@@ -135,7 +135,7 @@ function Write-Box {
     $width = Get-UiWidth
     $inner = $width - 4
     $titleText = " $Title "
-    $topFill = $width - 2 - $titleText.Length
+    $topFill = $width - 3 - $titleText.Length
     if ($topFill -lt 0) { $topFill = 0 }
 
     Write-Ui ""
