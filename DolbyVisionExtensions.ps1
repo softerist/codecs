@@ -567,9 +567,13 @@ for ($attempt = 1; $attempt -le 5 -and -not $installed; $attempt++) {
         Start-Sleep -Seconds 1
     }
 
-    $installed = Get-AppxPackage -Name $PackageName |
+    $installedPackage = Get-AppxPackage -Name $PackageName -ErrorAction SilentlyContinue |
         Sort-Object Version -Descending |
         Select-Object -First 1
+
+    if ($installedPackage -and ([version]$installedPackage.Version -ge $targetVersion)) {
+        $installed = $installedPackage
+    }
 }
 
 if ($installed) {
@@ -581,5 +585,5 @@ if ($installed) {
     ) Green
 } else {
     Stop-WithMessage "Add-AppxPackage reported success, but verification failed." `
-        "Get-AppxPackage does not show the Dolby Vision package."
+        "Get-AppxPackage does not show Dolby Vision v$targetVersion or newer."
 }

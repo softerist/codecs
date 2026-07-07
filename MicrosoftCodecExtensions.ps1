@@ -515,15 +515,17 @@ function Save-StoreFile {
 
     $fileName = Get-PackageFileName $File.Name
     $destFile = Join-Path $WorkDir $fileName
-    if (Test-Path -LiteralPath $destFile) {
-        return Get-Item -LiteralPath $destFile
+    $downloadFile = Join-Path $WorkDir ($fileName + ".download")
+    if (Test-Path -LiteralPath $downloadFile) {
+        Remove-Item -LiteralPath $downloadFile -Force
     }
 
     $previousProgressPreference = $ProgressPreference
     $ProgressPreference = "SilentlyContinue"
     try {
-        Invoke-WebRequest -Uri $File.Url -OutFile $destFile -UserAgent $UA `
+        Invoke-WebRequest -Uri $File.Url -OutFile $downloadFile -UserAgent $UA `
             -UseBasicParsing
+        Move-Item -LiteralPath $downloadFile -Destination $destFile -Force
     } finally {
         $ProgressPreference = $previousProgressPreference
     }
@@ -583,7 +585,10 @@ function Test-PackageInstalled {
 }
 
 function Wait-InstalledPackage {
-    param([Parameter(Mandatory = $true)][string]$PackageName)
+    param(
+        [Parameter(Mandatory = $true)][string]$PackageName,
+        [version]$MinimumVersion
+    )
 
     for ($attempt = 1; $attempt -le 5; $attempt++) {
         if ($attempt -gt 1) {
@@ -595,7 +600,9 @@ function Wait-InstalledPackage {
             Select-Object -First 1
 
         if ($installed) {
-            return $installed
+            if (-not $MinimumVersion -or ([version]$installed.Version -ge $MinimumVersion)) {
+                return $installed
+            }
         }
     }
 
@@ -651,9 +658,11 @@ function Install-StorePackageSpec {
         return "failed"
     }
 
-    $verified = Wait-InstalledPackage -PackageName $Spec.PackageName
+    $verified = Wait-InstalledPackage `
+        -PackageName $Spec.PackageName `
+        -MinimumVersion $targetVersion
     if (-not $verified) {
-        Write-PrettyWarning "install finished, but verification failed"
+        Write-PrettyWarning "install finished, but version verification failed"
         return "failed"
     }
 

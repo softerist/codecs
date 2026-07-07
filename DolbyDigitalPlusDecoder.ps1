@@ -384,6 +384,21 @@ function Get-RgAdguardFiles {
     }
 }
 
+function Get-PackageVersionFromName {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    $match = [regex]::Match($Name, '_(\d+(?:\.\d+){1,3})_')
+    if (-not $match.Success) {
+        return [version]"0.0.0.0"
+    }
+
+    try {
+        return [version]$match.Groups[1].Value
+    } catch {
+        return [version]"0.0.0.0"
+    }
+}
+
 Start-Step "Resolving Dolby DDP OEM package"
 
 $target = $null
@@ -401,8 +416,9 @@ foreach ($ring in $Rings) {
     }
     if ($candidates) {
         $packageSort = @(
+            @{ Expression = { Get-PackageVersionFromName $_.Name }; Descending = $true },
             @{ Expression = { $_.Name -notmatch 'bundle' }; Ascending = $true },
-            @{ Expression = { $_.Name }; Ascending = $true }
+            @{ Expression = { $_.Name }; Descending = $true }
         )
         $target = $candidates | Sort-Object -Property $packageSort | Select-Object -First 1
         Complete-Step "Found $($target.Name)"
@@ -416,6 +432,7 @@ if (-not $target) {
         "The API may require a browser challenge; use a manually copied package URL."
 }
 
+$targetVersion = Get-PackageVersionFromName $target.Name
 $destFile = Join-Path $WorkDir $target.Name
 Start-Step "Downloading package"
 Write-Detail $target.Name
@@ -449,8 +466,13 @@ for ($attempt = 1; $attempt -le 5 -and -not $installed; $attempt++) {
         Start-Sleep -Seconds 1
     }
 
-    $installed = Get-AppxPackage -Name $PackageName |
+    $installedPackage = Get-AppxPackage -Name $PackageName -ErrorAction SilentlyContinue |
+        Sort-Object Version -Descending |
         Select-Object -First 1
+
+    if ($installedPackage -and ([version]$installedPackage.Version -ge $targetVersion)) {
+        $installed = $installedPackage
+    }
 }
 
 if ($installed) {
@@ -462,5 +484,5 @@ if ($installed) {
     ) Green
 } else {
     Stop-WithMessage "Add-AppxPackage reported success, but verification failed." `
-        "Get-AppxPackage does not show the Dolby DDP OEM package."
+        "Get-AppxPackage does not show Dolby DDP OEM v$targetVersion or newer."
 }
