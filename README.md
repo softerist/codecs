@@ -1,7 +1,7 @@
 # Windows Codec Installers
 
-Small PowerShell installers for restoring Microsoft Store codec packages on
-Windows 10 and Windows 11.
+Small PowerShell installers for restoring Microsoft codec packages and 
+Dolby codecs packages Windows 10 and Windows 11.
 
 This repository does not host, mirror, or modify codec packages. The scripts ask
 the Microsoft Store backend, through `store.rg-adguard.net`, for current package
