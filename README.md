@@ -1,9 +1,9 @@
-# Windows Codec and Dolby App Installers
+# Windows Codec Installers
 
-Small PowerShell installers for restoring Microsoft codec packages, Dolby codec
-packages, and the optional Dolby Access app on Windows 10 and Windows 11.
+Small PowerShell installers for restoring Microsoft codec packages and Dolby
+codec packages on Windows 10 and Windows 11.
 
-This repository does not host, mirror, or modify Store packages. The scripts ask
+This repository does not host, mirror, or modify codec packages. The scripts ask
 the Microsoft Store backend, through `store.rg-adguard.net`, for current package
 URLs and install those packages with `Add-AppxPackage`.
 
@@ -55,23 +55,6 @@ This installs only:
 Dolby Vision support still depends on compatible display hardware, GPU drivers,
 HDR settings, and playback app support.
 
-### Dolby Access App
-
-```powershell
-irm https://raw.githubusercontent.com/softerist/codecs/main/DolbyAccess.ps1 | iex
-```
-
-This installs only:
-
-- `DolbyLaboratories.DolbyAccess`
-- Store product ID: `9N0866FS04W8`
-
-Dolby Access is an app, not a codec or decoder. It is included separately
-because it is the setup and licensing app for Dolby Atmos for Headphones and
-Dolby Atmos for Home Theater. Installing it does not grant a paid Atmos license
-by itself; restore or purchase the license inside Dolby Access if your
-device/account requires one.
-
 ### Microsoft Codec Extensions
 
 ```powershell
@@ -103,9 +86,6 @@ It targets Microsoft first-party Store codec extensions that can be resolved
 from product IDs. It is not every codec Windows can use. Built-in formats such
 as H.264, AAC, MP3, and common container support are part of Windows and are not
 installed as separate Store packages.
-
-The Dolby Access script is also separate from the Dolby codec scripts. It
-installs the Dolby Access app only; it does not add a decoder codec by itself.
 
 The script does not install the paid `HEVC Video Extensions` Store package
 (`9NMZLZ57R3T7`). It uses the free/OEM `HEVC Video Extension from Device
@@ -150,12 +130,10 @@ sign out and back in, or restart Windows.
 - `DOLBY_DDP_ASCII=1`: force ASCII output in the Dolby script.
 - `DOLBY_AC4_ASCII=1`: force ASCII output in the Dolby AC-4 script.
 - `DOLBY_VISION_ASCII=1`: force ASCII output in the Dolby Vision script.
-- `DOLBY_ACCESS_ASCII=1`: force ASCII output in the Dolby Access script.
 - `MICROSOFT_CODECS_ASCII=1`: force ASCII output in the Microsoft script.
 - `DOLBY_DDP_SCRIPT_URL`: override the Dolby elevated relaunch URL.
 - `DOLBY_AC4_SCRIPT_URL`: override the Dolby AC-4 elevated relaunch URL.
 - `DOLBY_VISION_SCRIPT_URL`: override the Dolby Vision elevated relaunch URL.
-- `DOLBY_ACCESS_SCRIPT_URL`: override the Dolby Access elevated relaunch URL.
 - `MICROSOFT_CODECS_SCRIPT_URL`: override the Microsoft elevated relaunch URL.
 
 ## References
@@ -163,7 +141,6 @@ sign out and back in, or restart Windows.
 - [Microsoft Store: Dolby Digital Plus Decoder OEM][dolby-ddp]
 - [Microsoft Store: Dolby AC-4 Decoder OEM][dolby-ac4]
 - [Microsoft Store: Dolby Vision Extensions][dolby-vision]
-- [Microsoft Store: Dolby Access][dolby-access]
 - [Microsoft Support: Windows Media Player errors][wmp-errors]
 - [Microsoft Support: Media Feature Pack optional apps][media-feature-pack]
 - [Microsoft Store: JPEG XL Image Extension][jpeg-xl]
@@ -172,7 +149,7 @@ sign out and back in, or restart Windows.
 ## Safety Notes
 
 - Read the scripts before running `irm ... | iex`.
-- The repository does not redistribute codec or app binaries.
+- The repository does not redistribute codec binaries.
 - The scripts install packages returned by the Microsoft Store backend.
 - This project is not affiliated with Microsoft, Dolby, or rg-adguard.
 
@@ -181,6 +158,5 @@ sign out and back in, or restart Windows.
 [dolby-ddp]: https://apps.microsoft.com/detail/9nvjqjbdkn97
 [dolby-ac4]: https://apps.microsoft.com/detail/9P7646QPH1Q0
 [dolby-vision]: https://apps.microsoft.com/detail/9PLTG1LWPHLF
-[dolby-access]: https://apps.microsoft.com/detail/9N0866FS04W8
 [jpeg-xl]: https://apps.microsoft.com/detail/9mzprth5c0tb
 [paid-hevc]: https://apps.microsoft.com/detail/9nmzlz57r3t7
