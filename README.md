@@ -1,7 +1,7 @@
 # Windows Codec Installers
 
-Small PowerShell installers for restoring Microsoft codec packages and 
-Dolby codecs packages Windows 10 and Windows 11.
+Small PowerShell installers for restoring Microsoft codec packages and Dolby
+codec packages on Windows 10 and Windows 11.
 
 This repository does not host, mirror, or modify codec packages. The scripts ask
 the Microsoft Store backend, through `store.rg-adguard.net`, for current package
@@ -54,6 +54,22 @@ This installs only:
 
 Dolby Vision support still depends on compatible display hardware, GPU drivers,
 HDR settings, and playback app support.
+
+### Dolby Access
+
+```powershell
+irm https://raw.githubusercontent.com/softerist/codecs/main/DolbyAccess.ps1 | iex
+```
+
+This installs only:
+
+- `DolbyLaboratories.DolbyAccess`
+- Store product ID: `9N0866FS04W8`
+
+Dolby Access is the setup app for Dolby Atmos for Headphones and Dolby Atmos
+for Home Theater. Installing it does not grant a paid Atmos license by itself;
+restore or purchase the license inside Dolby Access if your device/account
+requires one.
 
 ### Microsoft Codec Extensions
 
@@ -130,10 +146,12 @@ sign out and back in, or restart Windows.
 - `DOLBY_DDP_ASCII=1`: force ASCII output in the Dolby script.
 - `DOLBY_AC4_ASCII=1`: force ASCII output in the Dolby AC-4 script.
 - `DOLBY_VISION_ASCII=1`: force ASCII output in the Dolby Vision script.
+- `DOLBY_ACCESS_ASCII=1`: force ASCII output in the Dolby Access script.
 - `MICROSOFT_CODECS_ASCII=1`: force ASCII output in the Microsoft script.
 - `DOLBY_DDP_SCRIPT_URL`: override the Dolby elevated relaunch URL.
 - `DOLBY_AC4_SCRIPT_URL`: override the Dolby AC-4 elevated relaunch URL.
 - `DOLBY_VISION_SCRIPT_URL`: override the Dolby Vision elevated relaunch URL.
+- `DOLBY_ACCESS_SCRIPT_URL`: override the Dolby Access elevated relaunch URL.
 - `MICROSOFT_CODECS_SCRIPT_URL`: override the Microsoft elevated relaunch URL.
 
 ## References
@@ -141,6 +159,7 @@ sign out and back in, or restart Windows.
 - [Microsoft Store: Dolby Digital Plus Decoder OEM][dolby-ddp]
 - [Microsoft Store: Dolby AC-4 Decoder OEM][dolby-ac4]
 - [Microsoft Store: Dolby Vision Extensions][dolby-vision]
+- [Microsoft Store: Dolby Access][dolby-access]
 - [Microsoft Support: Windows Media Player errors][wmp-errors]
 - [Microsoft Support: Media Feature Pack optional apps][media-feature-pack]
 - [Microsoft Store: JPEG XL Image Extension][jpeg-xl]
@@ -158,5 +177,6 @@ sign out and back in, or restart Windows.
 [dolby-ddp]: https://apps.microsoft.com/detail/9nvjqjbdkn97
 [dolby-ac4]: https://apps.microsoft.com/detail/9P7646QPH1Q0
 [dolby-vision]: https://apps.microsoft.com/detail/9PLTG1LWPHLF
+[dolby-access]: https://apps.microsoft.com/detail/9N0866FS04W8
 [jpeg-xl]: https://apps.microsoft.com/detail/9mzprth5c0tb
 [paid-hevc]: https://apps.microsoft.com/detail/9nmzlz57r3t7
