@@ -1,9 +1,9 @@
-# Windows Codec Installers
+# Windows Codec and Dolby App Installers
 
-Small PowerShell installers for restoring Microsoft codec packages and Dolby
-codec packages on Windows 10 and Windows 11.
+Small PowerShell installers for restoring Microsoft codec packages, Dolby codec
+packages, and the optional Dolby Access app on Windows 10 and Windows 11.
 
-This repository does not host, mirror, or modify codec packages. The scripts ask
+This repository does not host, mirror, or modify Store packages. The scripts ask
 the Microsoft Store backend, through `store.rg-adguard.net`, for current package
 URLs and install those packages with `Add-AppxPackage`.
 
@@ -55,7 +55,7 @@ This installs only:
 Dolby Vision support still depends on compatible display hardware, GPU drivers,
 HDR settings, and playback app support.
 
-### Dolby Access
+### Dolby Access App
 
 ```powershell
 irm https://raw.githubusercontent.com/softerist/codecs/main/DolbyAccess.ps1 | iex
@@ -66,10 +66,11 @@ This installs only:
 - `DolbyLaboratories.DolbyAccess`
 - Store product ID: `9N0866FS04W8`
 
-Dolby Access is the setup app for Dolby Atmos for Headphones and Dolby Atmos
-for Home Theater. Installing it does not grant a paid Atmos license by itself;
-restore or purchase the license inside Dolby Access if your device/account
-requires one.
+Dolby Access is an app, not a codec or decoder. It is included separately
+because it is the setup and licensing app for Dolby Atmos for Headphones and
+Dolby Atmos for Home Theater. Installing it does not grant a paid Atmos license
+by itself; restore or purchase the license inside Dolby Access if your
+device/account requires one.
 
 ### Microsoft Codec Extensions
 
@@ -102,6 +103,9 @@ It targets Microsoft first-party Store codec extensions that can be resolved
 from product IDs. It is not every codec Windows can use. Built-in formats such
 as H.264, AAC, MP3, and common container support are part of Windows and are not
 installed as separate Store packages.
+
+The Dolby Access script is also separate from the Dolby codec scripts. It
+installs the Dolby Access app only; it does not add a decoder codec by itself.
 
 The script does not install the paid `HEVC Video Extensions` Store package
 (`9NMZLZ57R3T7`). It uses the free/OEM `HEVC Video Extension from Device
@@ -168,7 +172,7 @@ sign out and back in, or restart Windows.
 ## Safety Notes
 
 - Read the scripts before running `irm ... | iex`.
-- The repository does not redistribute codec binaries.
+- The repository does not redistribute codec or app binaries.
 - The scripts install packages returned by the Microsoft Store backend.
 - This project is not affiliated with Microsoft, Dolby, or rg-adguard.
 
